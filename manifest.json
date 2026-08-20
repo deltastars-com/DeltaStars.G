@@ -1,0 +1,65 @@
+{
+  "short_name": "نجوم دلتا",
+  "name": "نجوم دلتا للتجارة — Delta Stars Trading",
+  "description": "المتجر الإلكتروني الرسمي لشركة نجوم دلتا للتجارة — خضروات، فواكه، وتمور عالية الجودة مع خدمة التوصيل المبرد بكافة أنحاء المملكة",
+  "lang": "ar-SA",
+  "dir": "rtl",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-1024.png",
+      "type": "image/png",
+      "sizes": "1024x1024",
+      "purpose": "any"
+    }
+  ],
+  "screenshots": [],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#0B4B28",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "categories": ["shopping", "food", "business"],
+  "shortcuts": [
+    {
+      "name": "المنتجات العصرية",
+      "short_name": "المنتجات",
+      "description": "تصفح أحدث الخضروات والفواكه والتمور",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "صالة العروض",
+      "short_name": "العروض",
+      "description": "استكشف العروض الحصرية والخصومات",
+      "url": "/",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
