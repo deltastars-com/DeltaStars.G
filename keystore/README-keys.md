@@ -1,173 +1,163 @@
-# دليل التوقيع والène Keys — Delta Stars Trading Co.
-# Keystore & Signing Guide — نجوم دلتا للتجارة
-
-> ⚠️ **تحذير أمني حرج:** ملفات التوقيع (Keystore) وكلمات المرور المرتبطة بها حساسة للغاية.
-> لا تُ程式 قط في Git أو أي نظام إدارة أصداد. احتفظ بها في مكان آمن خارج المستودع.
+# 🔑 دليل توقيع التطبيقات — Android & iOS Signing Guide
+## شركة نجوم دلتا للتجارة (Delta Stars Trading Co.)
 
 ---
 
-## أولاً: توقيع تطبيق Android
+## 📱 Android — توقيع APK/AAB
 
-### 1. إنشاء Keystore جديد
+### 1. إنشاء ملف التوقيع (Keystore)
 
 ```bash
-keytool -genkey -v \
-  -keystore deltastars-release.jks \
+# تشغيل السكربت المُرفق
+chmod +x scripts/generate-keystore.sh
+./scripts/generate-keystore.sh
+```
+
+أو يدوياً:
+```bash
+keytool -genkeypair -v \
+  -keystore keystore/deltastars-release.jks \
+  -alias deltastars \
   -keyalg RSA \
   -keysize 2048 \
   -validity 10000 \
-  -alias deltastars \
   -storepass YOUR_STORE_PASSWORD \
-  -keypass YOUR_KEY_PASSWORD
+  -keypass YOUR_KEY_PASSWORD \
+  -dname "CN=Delta Stars Trading Co., O=نجوم دلتا للتجارة, L=Jeddah, ST=Makkah, C=SA"
 ```
 
-**أثناء الإنشاء، أدخل:**
-```
-ما هو اسمك واسم عائلتك؟     → Delta Stars Trading Co.
-ما هو اسم الوحدة التنظيمية؟  → IT Department
-ما هو اسم مؤسستك؟           → Delta Stars Trading Co.
-ما هو اسم مدينتك؟           → Jeddah
-ما هي ولايتك/محافظتك؟      → Makkah Region
-ما هو رمز بلدك؟             → SA (المملكة العربية السعودية)
-```
+### 2. إعدادات التوقيع للـ CI/CD
 
-### 2. فحص Keystore
+**CodeMagic Secrets:**
+| الاسم | الوصف |
+|-------|-------|
+| `CM_KEYSTORE` | محتوى ملف .jks مشفر بـ base64 |
+| `CM_KEYSTORE_PASSWORD` | كلمة مرور الـ keystore |
+| `CM_KEY_ALIAS` | اسم الـ alias (deltastars) |
+| `CM_KEY_PASSWORD` | كلمة مرور المفتاح |
+| `GCLOUD_SERVICE_ACCOUNT_CREDENTIALS` | حساب Google Play Console |
+
+**GitHub Actions Secrets:**
+| الاسم | الوصف |
+|-------|-------|
+| `KEYSTORE_BASE64` | `base64 -w 0 keystore/deltastars-release.jks` |
+| `KEYSTORE_PASSWORD` | كلمة مرور الـ keystore |
+| `KEY_ALIAS` | deltastars |
+| `KEY_PASSWORD` | كلمة مرور المفتاح |
+
+### 3. بناء APK/AAB محلياً
 
 ```bash
-keytool -list -v -keystore deltastars-release.jks -alias deltastars
+# بناء APK (لتثبيت مباشر)
+export KEYSTORE_PATH=keystore/deltastars-release.jks
+export KEYSTORE_PASSWORD=your_password
+export KEY_ALIAS=deltastars
+export KEY_PASSWORD=your_password
+
+bun run build:cap
+cd android
+./gradlew assembleRelease
+# النتيجة: android/app/build/outputs/apk/release/DeltaStars-v1.1.0-release.apk
+
+# بناء AAB (لمتجر Google Play)
+./gradlew bundleRelease
+# النتيجة: android/app/build/outputs/bundle/release/app-release.aab
 ```
 
-### 3. تحويل Keystore إلى Base64 (لـ CodeMagic)
+### 4. رفع AAB إلى Google Play Console
 
-```bash
-# Linux / macOS
-base64 -i deltastars-release.jks | tr -d '\n' > deltastars-release-base64.txt
+1. افتح [Google Play Console](https://play.google.com/console)
+2. أنشئ تطبيقاً جديداً بـ Package Name: `com.deltastars.store`
+3. ارفع ملف `app-release.aab` في قسم **Production → App bundles**
+4. أكمل جميع الحقول المطلوبة (وصف، لقطات شاشة، إلخ)
+5. أرسل للمراجعة
 
-# Windows
-certutil -encodehex deltastars-release.jks deltastars-release-base64.txt
-```
-
-### 4. إعداد Firebase App Signing (موصى به)
-
-1. افتح [Firebase Console](https://console.firebase.google.com)
-2. اختر مشروعك → Project Settings → Android App
-3. اضغط "Upload certificate" → ارفع ملف `.jks`
-4. Firebase سيقوم بتوقيع التطبيق بدلاً منك
-
-### 5. متطلبات Google Play
-
-| البند | المتطلب |
-|-------|---------|
-| SHA-1 Certificate | الحصول عليه من `keytool -list` |
-| SHA-256 Certificate | الحصول عليه من `keytool -list -v` |
-| App Bundle (AAB) | ملف `.aab` موقَّع |
-| Target API Level | 34+ (Android 14) |
-| Minimum API Level | 24 (Android 7) |
+### ⚠️ تحذيرات مهمة
+- **لا تفقد ملف الـ keystore!** إذا فقده، لن تتمكن من تحديث تطبيقك على Google Play
+- احتفظ بنسخة احتياطية مشفرة في مكان آمن
+- لا ترفع ملف الـ keystore أو كلمات المرور إلى Git
 
 ---
 
-## ثانياً: توقيع تطبيق iOS
+## 🍎 iOS — توقيع IPA
 
 ### 1. متطلبات Apple Developer
 
-- حساب Apple Developer ($99/سنة)
-- Apple Developer Team
-- App Store Connect API Key (اختياري — عبر CodeMagic)
+- حساب **Apple Developer Program** ($99/سنة)
+- **Xcode 15+** على macOS
+- **CocoaPods** (يُثبّت عبر `brew install cocoapods`)
 
-### 2. إعداد Xcode Signing
+### 2. إعدادات التوقيع
+
+#### Option A: App Store Connect API Key (موصى به للـ CI/CD)
+
+1. اذهب إلى [App Store Connect → Users and Access → Keys](https://appstoreconnect.apple.com/access/api)
+2. أنشئ مفتاحاً جديداً بدور **App Manager**
+3. حمّل ملف `.p8` واحفظ `Issuer ID` و `Key ID`
+
+**CodeMagic Secrets:**
+| الاسم | الوصف |
+|-------|-------|
+| `APP_STORE_CONNECT_ISSUER_ID` | Issuer ID من App Store Connect |
+| `APP_STORE_CONNECT_KEY_IDENTIFIER` | Key ID |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | محتوى ملف .p8 |
+
+#### Option B: Xcode手动 التوقيع (للتطوير المحلي)
 
 1. افتح `ios/App/App.xcworkspace` في Xcode
-2. اختر مشروع `App`
-3. تبويب "Signing & Capabilities"
-4. اختر Team الخاص بك
-5.毅ّر "Automatically manage signing"
+2. اختر **Signing & Capabilities**
+3. حدد **Automatically manage signing**
+4. اختر **Team** (حساب Apple Developer)
 
-### 3. App Store Connect API Key (لـ CodeMagic)
-
-```bash
-# من https://appstoreconnect.apple.com/access/integrations/api
-# 1. أنشئ API Key جديد بصلاحية "Developer"
-# 2. حمّل ملف .p8
-# 3. احفظ Issuer ID و Key Identifier
-```
-
-### 4. متطلبات App Store
-
-| البند | المتطلب |
-|-------|---------|
-| Bundle ID | `com.deltastars.store` |
-| Minimum iOS | 15.0+ |
-| App Icon | 1024x1024 PNG |
-| Screenshots | iPhone 6.7", 6.5", 5.5" + iPad |
-| Privacy Manifest | PrivacyInfo.xcprivacy |
-| Privacy Policy URL | `https://deltastars.store/privacy-policy.html` |
-
----
-
-## ثالثاً: ملفات Firebase المطلوبة
-
-### google-services.json (Android)
-
-1. افتح [Firebase Console](https://console.firebase.google.com)
-2. Project Settings → Android App
-3. اضغط "google-services.json"
-4. احفظه في: `android/app/google-services.json`
-
-### GoogleService-Info.plist (iOS)
-
-1. افتح Firebase Console
-2. Project Settings → iOS App
-3. اضغط "GoogleService-Info.plist"
-4. احفظه في: `ios/App/App/`
-
----
-
-## رابعاً: نص توليد التوقيعات تلقائياً
+### 3. بناء IPA
 
 ```bash
-#!/bin/sh
-# scripts/generate-signing.sh
+# بناء IPA محلياً
+bun run build:cap
+cd ios/App
+pod install
 
-echo "🔑 Delta Stars — Keystore Generator"
+# بناء عبر Xcode
+xcodebuild -workspace App.xcworkspace \
+  -scheme App \
+  -configuration Release \
+  -archivePath build/App.xcarchive \
+  archive
 
-# إعدادات
-STORE_NAME="deltastars-release.jks"
-ALIAS="deltastars"
-VALIDITY=10000
-KEY_SIZE=2048
-
-# طلب كلمة المرور
-read -p "Enter store password: " STORE_PASS
-read -p "Enter key password: " KEY_PASS
-
-# توليد Keystore
-keytool -genkey -v \
-  -keystore "$STORE_NAME" \
-  -keyalg RSA \
-  -keysize $KEY_SIZE \
-  -validity $VALIDITY \
-  -alias "$ALIAS" \
-  -storepass "$STORE_PASS" \
-  -keypass "$KEY_PASS" \
-  -dname "CN=Delta Stars Trading Co., OU=IT, O=Delta Stars, L=Jeddah, ST=Makkah, C=SA"
-
-echo "✅ Keystore generated: $STORE_NAME"
-echo "📋 SHA-1:"
-keytool -list -v -keystore "$STORE_NAME" -alias "$ALIAS" -storepass "$STORE_PASS" | grep SHA1
-echo "📋 SHA-256:"
-keytool -list -v -keystore "$STORE_NAME" -alias "$ALIAS" -storepass "$STORE_PASS" | grep SHA256
+# تصدير IPA
+xcodebuild -exportArchive \
+  -archivePath build/App.xcarchive \
+  -exportOptionsPlist ExportOptions.plist \
+  -exportPath build/ipa
 ```
 
+### 4. رفع إلى App Store Connect
+
+1. افتح **Transporter** أو استخدم `altool`
+2. ارفع ملف `.ipa`
+3. اذهب إلى [App Store Connect](https://appstoreconnect.apple.com)
+4. أكمل جميع الحقول المتطلبة
+5. أرسل للمراجعة
+
+### متطلبات App Store
+- ✅ لقطات شاشة لأحجام شاشات مختلفة (6.7", 6.5", 5.5")
+- ✅ أيقونة 1024x1024 بدون عناصر شفافة
+- ✅ وصف التطبيق (30 حرف كحد أقصى للعنوان)
+- ✅ رابط سياسة الخصوصية (Privacy Policy URL)
+- ✅ رابط دعم (Support URL)
+- ✅ فئة التطبيق
+
 ---
 
-## ⚠️ قواعد أمنية إلزامية:
+## 🔗 روابط مهمة
 
-1. **لا ت程式** ملف Keystore أو كلمة المرور في Git
-2. **أضف** `*.jks` و `*.keystore` إلى `.gitignore`
-3. **استخدم** Environment Variables لكلمات المرور في CI/CD
-4. **احتفظ** بنسخة احتياطية في مكان آمن (Vault أو Password Manager)
-5. **لا تشارك** كلمة المرور إلا مع مسؤولي DevOps المخوّلين
+| الرابط | الوصف |
+|--------|-------|
+| [Google Play Console](https://play.google.com/console) | إدارة تطبيق Android |
+| [App Store Connect](https://appstoreconnect.apple.com) | إدارة تطبيق iOS |
+| [Privacy Policy](https://deltastars.store/privacy-policy.html) | سياسة الخصوصية |
+| [Delta Stars Website](https://deltastars.store) | الموقع الرسمي |
 
 ---
 
-**© 2026 شركة نجوم دلتا للتجارة — جميع الحقوق محفوظة**
+© 2026 شركة نجوم دلتا للتجارة — Delta Stars Trading Co.

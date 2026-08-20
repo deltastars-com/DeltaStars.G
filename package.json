@@ -1,7 +1,7 @@
 {
   "name": "delta-stars",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "engines": {
     "node": ">=18.0.0",
@@ -19,6 +19,8 @@
     "build:ios": "vite build && npx cap sync ios",
     "build:apk": "vite build && npx cap sync android && cd android && ./gradlew assembleRelease",
     "build:aab": "vite build && npx cap sync android && cd android && ./gradlew bundleRelease",
+    "build:ipa": "vite build && npx cap sync ios && cd ios/App && pod install",
+    "generate-keystore": "bash scripts/generate-keystore.sh",
     "start": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
     "preview": "vite preview --host 0.0.0.0 --port ${PORT:-4173}",
     "cap:sync": "npx cap sync",
@@ -34,7 +36,7 @@
   "dependencies": {
     "@capacitor/android": "^8.3.4",
     "@capacitor/assets": "^3.0.5",
-    "@capacitor/cli": "^8.3.4",
+    "@capacitor/cli": "^8.5.0",
     "@capacitor/core": "^8.3.4",
     "@capacitor/geolocation": "^8.1.0",
     "@capacitor/ios": "^8.3.4",
@@ -50,8 +52,8 @@
     "@tailwindcss/postcss": "^4.0.0",
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.96.2",
-    "@vitejs/plugin-react": "4.3.4",
     "@vis.gl/react-google-maps": "^1.9.0",
+    "@vitejs/plugin-react": "4.3.4",
     "autoprefixer": "^10.4.20",
     "axios": "^1.15.0",
     "clsx": "^2.1.1",

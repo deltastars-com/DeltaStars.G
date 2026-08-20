@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- For App Store distribution -->
+    <key>method</key>
+    <string>app-store</string>
+    
+    <!-- Bundle ID -->
+    <key>bundleIdentifier</key>
+    <string>com.deltastars.store</string>
+    
+    <!-- Team ID from Apple Developer -->
+    <key>teamID</key>
+    <string>YOUR_TEAM_ID_HERE</string>
+    
+    <!-- Upload bitcode (deprecated but harmless) -->
+    <key>uploadBitcode</key>
+    <false/>
+    
+    <!-- Upload symbols for crash reporting -->
+    <key>uploadSymbols</key>
+    <true/>
+    
+    <!-- Compile bitcode -->
+    <key>compileBitcode</key>
+    <false/>
+    
+    <!-- Signing style -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+    
+    <!-- Destination for export -->
+    <key>destination</key>
+    <string>upload</string>
+    
+    <!-- Thinning (None for universal) -->
+    <key>thinning</key>
+    <string>&lt;none&gt;</string>
+    
+    <!-- iCloud container (if needed) -->
+    <!--
+    <key>iCloudContainerEnvironment</key>
+    <string>Production</string>
+    -->
+</dict>
+</plist>
