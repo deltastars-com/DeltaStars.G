@@ -1,0 +1,94 @@
+name: 🍎 Delta Stars — Build iOS IPA
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS IPA
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    env:
+      NODE_VERSION: '20'
+      BUNDLE_ID: 'com.deltastars.store'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 📦 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: 🔨 Build Web App
+        run: bun run build:web
+
+      - name: 🔄 Sync Capacitor
+        run: npx cap sync ios
+
+      - name: 🍫 Install CocoaPods
+        run: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: 🔑 Setup Code Signing
+        if: ${{ env.APP_STORE_CONNECT_PRIVATE_KEY != '' }}
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          APP_STORE_CONNECT_KEY_IDENTIFIER: ${{ secrets.APP_STORE_CONNECT_KEY_IDENTIFIER }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          # Create temp keychain
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 32)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate
+          echo "$APP_STORE_CONNECT_PRIVATE_KEY" | base64 --decode > $RUNNER_TEMP/auth_key.p8
+
+          # Use fastlane or xcodebuild for signing
+          echo "Keychain prepared for code signing"
+
+      - name: 🏗️ Build iOS IPA
+        if: ${{ env.APP_STORE_CONNECT_PRIVATE_KEY != '' }}
+        run: |
+          cd ios/App
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -destination 'generic/platform=iOS' \
+            clean archive | xcpretty
+
+          xcodebuild -exportArchive \
+            -archivePath $RUNNER_TEMP/App.xcarchive \
+            -exportOptionsPlist ../../ios/App/ExportOptions.plist \
+            -exportPath $RUNNER_TEMP/export
+
+      - name: 📦 Upload IPA
+        if: ${{ env.APP_STORE_CONNECT_PRIVATE_KEY != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeltaStars-iOS-IPA
+          path: ${{ runner.temp }}/export/*.ipa
+          retention-days: 90
+
+      - name: 🚀 Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/') && env.APP_STORE_CONNECT_PRIVATE_KEY != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ runner.temp }}/export/*.ipa
+          generate_release_notes: true

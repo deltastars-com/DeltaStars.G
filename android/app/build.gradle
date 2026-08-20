@@ -18,17 +18,29 @@ android {
 
     signingConfigs {
         release {
-            // Use environment variables for CI/CD builds (CodeMagic, GitHub Actions)
-            def keystorePath = System.getenv('KEYSTORE_PATH') ?: project.findProperty('KEYSTORE_PATH')
-            def keystorePassword = System.getenv('KEYSTORE_PASSWORD') ?: project.findProperty('KEYSTORE_PASSWORD')
-            def keyAlias = System.getenv('KEY_ALIAS') ?: project.findProperty('KEY_ALIAS')
-            def keyPassword = System.getenv('KEY_PASSWORD') ?: project.findProperty('KEY_PASSWORD')
+            // Support: env vars (GitHub Actions), gradle properties (CodeMagic), or local.properties
+            def ksPath = System.getenv('KEYSTORE_PATH') ?: project.findProperty('KEYSTORE_PATH') ?: ''
+            def ksPass = System.getenv('KEYSTORE_PASSWORD') ?: project.findProperty('KEYSTORE_PASSWORD') ?: ''
+            def ksAlias = System.getenv('KEY_ALIAS') ?: project.findProperty('KEY_ALIAS') ?: ''
+            def ksKeyPass = System.getenv('KEY_PASSWORD') ?: project.findProperty('KEY_PASSWORD') ?: ''
 
-            if (keystorePath && keystorePassword && keyAlias && keyPassword) {
-                storeFile file(keystorePath)
-                storePassword keystorePassword
-                keyAlias keyAlias
-                keyPassword keyPassword
+            // Fallback: try reading from local.properties file
+            if (!ksPath) {
+                try {
+                    def props = new Properties()
+                    props.load(new FileInputStream(rootProject.file('local.properties')))
+                    ksPath = props.getProperty('KEYSTORE_PATH', '')
+                    ksPass = props.getProperty('KEYSTORE_PASSWORD', '')
+                    ksAlias = props.getProperty('KEY_ALIAS', '')
+                    ksKeyPass = props.getProperty('KEY_PASSWORD', '')
+                } catch (Exception ignored) {}
+            }
+
+            if (ksPath && ksPass && ksAlias && ksKeyPass) {
+                storeFile file(ksPath)
+                storePassword ksPass
+                keyAlias ksAlias
+                keyPassword ksKeyPass
             }
         }
     }

@@ -1,0 +1,120 @@
+name: 🤖 Delta Stars — Build Android APK & AAB
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build Android APK + AAB
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      JAVA_VERSION: '21'
+      ANDROID_API: '36'
+      NODE_VERSION: '20'
+      PACKAGE_NAME: 'com.deltastars.store'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: ☕ Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: 📱 Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: ${{ env.ANDROID_API }}
+          accept-android-sdk-licenses: true
+
+      - name: 🔨 Build Web App
+        run: bun run build:web
+
+      - name: 🔄 Sync Capacitor
+        run: npx cap sync android
+
+      - name: 🔑 Decode Keystore (if available)
+        if: ${{ env.CM_KEYSTORE != '' }}
+        env:
+          CM_KEYSTORE: ${{ secrets.CM_KEYSTORE }}
+        run: |
+          echo "$CM_KEYSTORE" | base64 --decode > android/app/release.jks
+          echo "Keystore decoded successfully"
+
+      - name: 🏗️ Build Debug APK
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx2048m"
+
+      - name: 🏗️ Build Release APK + AAB
+        if: ${{ env.CM_KEYSTORE != '' }}
+        env:
+          CM_KEYSTORE_PASSWORD: ${{ secrets.CM_KEYSTORE_PASSWORD }}
+          CM_KEY_ALIAS: ${{ secrets.CM_KEY_ALIAS }}
+          CM_KEY_PASSWORD: ${{ secrets.CM_KEY_PASSWORD }}
+        run: |
+          cd android
+          ./gradlew assembleRelease bundleRelease --no-daemon \
+            -Dorg.gradle.jvmargs="-Xmx2048m" \
+            -PKEYSTORE_PATH=app/release.jks \
+            -PKEYSTORE_PASSWORD="$CM_KEYSTORE_PASSWORD" \
+            -PKEY_ALIAS="$CM_KEY_ALIAS" \
+            -PKEY_PASSWORD="$CM_KEY_PASSWORD"
+
+      - name: 📦 Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeltaStars-Debug-APK
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: 📦 Upload Release APK
+        if: ${{ env.CM_KEYSTORE != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeltaStars-Release-APK
+          path: android/app/build/outputs/apk/release/*.apk
+          retention-days: 90
+
+      - name: 📦 Upload Release AAB
+        if: ${{ env.CM_KEYSTORE != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeltaStars-Release-AAB
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 90
+
+      - name: 📦 Upload PWA
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeltaStars-PWA
+          path: dist/
+          retention-days: 30
+
+      - name: 🚀 Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+          generate_release_notes: true
+
+      - name: 🧹 Cleanup Keystore
+        if: always()
+        run: rm -f android/app/release.jks
