@@ -1,0 +1,59 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "vite",
+  "buildCommand": "vite build",
+  "outputDirectory": "dist",
+  "installCommand": "bun install",
+  "devCommand": "vite --host 0.0.0.0 --port $PORT",
+  "regions": ["dxb1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        { "key": "X-Robots-Tag", "value": "index, follow" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/index.html",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/api/otp/send", "destination": "/api/otp-send" },
+    { "source": "/api/otp/verify", "destination": "/api/otp-verify" },
+    { "source": "/api/otp/notify", "destination": "/api/otp-notify" },
+    { "source": "/api/contact", "destination": "/api/contact-form" },
+    { "source": "/api/payment/create", "destination": "/api/create-payment" },
+    { "source": "/api/payment/verify", "destination": "/api/verify-payment" },
+    { "source": "/api/payment/cancel", "destination": "/api/cancel-payment" },
+    { "source": "/(.*[^\\.])$", "destination": "/index.html" }
+  ],
+  "env": {
+    "VITE_SUPABASE_URL": "@vite-supabase-url",
+    "VITE_SUPABASE_ANON_KEY": "@vite-supabase-anon-key",
+    "VITE_GEMINI_API_KEY": "@vite-gemini-api-key",
+    "VITE_GOOGLE_MAPS_API_KEY": "@vite-google-maps-api-key",
+    "VITE_MOYASAR_PUBLISHABLE_KEY": "@vite-moyasar-publishable-key",
+    "VITE_FIREBASE_API_KEY": "@vite-firebase-api-key",
+    "VITE_FIREBASE_AUTH_DOMAIN": "@vite-firebase-auth-domain",
+    "VITE_FIREBASE_PROJECT_ID": "@vite-firebase-project-id"
+  }
+}

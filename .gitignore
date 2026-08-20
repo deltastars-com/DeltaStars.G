@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+.env.development.local
+
+# Keystore files (NEVER commit)
+*.jks
+*.keystore
+keystore/*.jks
+keystore/*.keystore
+google-services.json
+GoogleService-Info.plist
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+bun-debug.log*
+
+# Temporary
+_extracted/
+*.zip
+!.codemagic.yaml
+
+# Capacitor
+android/app/build/
+android/build/
+ios/App/Pods/
+ios/build/
+
+# Misc
+.cache/
+.netlify/
+.vercel/

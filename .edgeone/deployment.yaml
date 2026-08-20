@@ -1,0 +1,57 @@
+# ================================================================
+# EdgeOne (Tencent Cloud) Deployment Configuration
+# Delta Stars Trading Co. — نجوم دلتا للتجارة
+# ================================================================
+#
+# Deploy via EdgeOne Console:
+# 1. Create a EdgeOne Pages project
+# 2. Connect GitHub repo
+# 3. Set build settings below
+# 4. Configure custom domain: deltastars.store
+#
+# Build Configuration:
+#   Framework:      Vite (React)
+#   Node Version:   18+
+#   Install:        bun install
+#   Build:          vite build
+#   Output:         dist/
+#   Root Directory: /
+#
+# Environment Variables (add in EdgeOne Console → Settings → Environment):
+#   VITE_SUPABASE_URL=https://your-project.supabase.co
+#   VITE_SUPABASE_ANON_KEY=your-anon-key
+#   VITE_GEMINI_API_KEY=your-gemini-key
+#   VITE_GOOGLE_MAPS_API_KEY=your-maps-key
+#   VITE_MOYASAR_PUBLISHABLE_KEY=pk_live_xxx
+#   VITE_FIREBASE_API_KEY=xxx
+#   VITE_FIREBASE_AUTH_DOMAIN=xxx.firebaseapp.com
+#   VITE_FIREBASE_PROJECT_ID=xxx
+#
+# CDN Cache Rules (EdgeOne Dashboard → CDN → Cache Rules):
+#   /assets/*     → Cache 365 days (immutable)
+#   /index.html   → No cache
+#   /service-worker.js → No cache
+#   *.js, *.css   → Cache 30 days
+#   *.png, *.jpg  → Cache 90 days
+#
+# Security Headers (EdgeOne Dashboard → Security → Custom Response Headers):
+#   X-Content-Type-Options: nosniff
+#   X-Frame-Options: SAMEORIGIN
+#   Referrer-Policy: strict-origin-when-cross-origin
+#   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+#   Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;
+#     connect-src 'self' https: wss: *.supabase.co wss://*.supabase.co;
+#     img-src 'self' https: data: blob:; font-src 'self' https: data:;
+#     style-src 'self' 'unsafe-inline' https:; frame-src 'self' https:;
+#
+# Redirect Rules (EdgeOne Dashboard → CDN → Rules):
+#   SPA Fallback: All routes → /index.html (Status: 200)
+#
+# ================================================================
+
+framework: vite
+node_version: "18"
+build_command: "vite build"
+output_directory: "dist"
+install_command: "bun install"
+root_directory: "/"
