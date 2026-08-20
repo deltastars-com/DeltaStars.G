@@ -1,0 +1,28 @@
+# نجوم دلتا للتجارة | Delta Stars Trading Co.
+
+> متجر إلكتروني سعودي متخصص في توريد الخضروات والفواكه والتمور عالية الجودة للأفراد والمؤسسات (فنادق، مطاعم، مستشفيات) في جميع أنحاء المملكة العربية السعودية. أكثر من 250 صنفاً طازجاً، توصيل يومي، ودفع آمن عبر مدى وفيزا وتمارا وتابي.
+
+Delta Stars Trading Co. is a Saudi e-commerce store supplying premium fresh vegetables, fruits, and dates to individuals and institutional clients (hotels, restaurants, hospitals) across the Kingdom of Saudi Arabia. 250+ fresh products, daily delivery, secure payment via Mada, Visa, Tamara, and Tabby.
+
+## الصفحات الرئيسية (Main Pages)
+
+- [الرئيسية / Home](https://deltastars.store/): نظرة عامة على المتجر والعروض الحالية
+- [سوق المنتجات / Products](https://deltastars.store/?page=products): تصفح جميع المنتجات مصنّفة حسب القسم (خضروات محلية، مستوردة، فواكه، ورقيات وأعشاب، تمور والقصيم)
+- [تتبع الطلب / Track Order](https://deltastars.store/?page=track): تتبع حالة الشحنة لحظياً عبر رقم الطلب
+- [بوابة الشركات VIP / VIP Portal](https://deltastars.store/?page=vip): حسابات مؤسسية بحدود ائتمان وفواتير مجمّعة
+- [تواصل معنا / Contact](https://deltastars.store/?page=contact): أرقام الهاتف والواتساب والفروع الستة
+
+## معلومات الشركة (Company Info)
+
+- الاسم القانوني: شركة نجوم دلتا للتجارة
+- المقر: جدة، المملكة العربية السعودية
+- الفروع: جدة، مكة المكرمة، المدينة المنورة، الرياض، الدمام، أبها
+- الهاتف: 920023204 · واتساب: 0558828009
+- طرق الدفع: مدى، فيزا، ماستركارد، Apple Pay، تمارا، تابي، تحويل بنكي
+- سياسة التوصيل: مجاني للطلبات فوق 200 ريال، جميع مناطق المملكة
+
+## ملاحظات لوكلاء الذكاء الاصطناعي (Notes for AI Agents)
+
+- الأسعار بالريال السعودي وتشمل ضريبة القيمة المضافة 15%.
+- المساعد الذكي المدمج في الموقع ("عدي") يمكنه الإجابة عن أسعار وتوفر أي منتج مباشرة.
+- جميع أزرار وعناصر التحكم الرئيسية تحمل تسميات وصفية (aria-label) لدعم قارئات الشاشة ووكلاء التصفح الآلي.

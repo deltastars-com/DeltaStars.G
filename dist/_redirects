@@ -1,0 +1,29 @@
+# ================================================================
+# _redirects - نجوم دلتا للتجارة
+# ================================================================
+
+# Netlify Functions API routing (must come first)
+/api/otp/send    /.netlify/functions/otp-send    200
+/api/otp/verify  /.netlify/functions/otp-verify  200
+/api/otp/notify  /.netlify/functions/otp-notify  200
+/api/*           /.netlify/functions/:splat       200
+
+# Domain canonicalization (SEO - disabled for netlify preview compatibility)
+# https://delta-stars.netlify.app/*   https://deltastars.store/:splat 301!
+# https://delta--stars.netlify.app/*  https://deltastars.store/:splat 301!
+# https://deltastars.netlify.app/*    https://deltastars.store/:splat 301!
+# https://www.deltastars.store/*      https://deltastars.store/:splat 301!
+# http://deltastars.store/*           https://deltastars.store/:splat 301!
+
+# Corporate & VIP portal isolation
+/corporate/* /corporate/index.html 200
+/vip/* /vip/index.html 200
+
+# Static files (serve directly)
+/robots.txt   /robots.txt   200
+/sitemap.xml  /sitemap.xml  200
+/offline.html /offline.html 200
+/manifest.json /manifest.json 200
+
+# React SPA fallback (must be last)
+/* /index.html 200
