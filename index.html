@@ -11,25 +11,6 @@
   <meta name="robots" content="index, follow" />
   <link rel="canonical" href="https://deltastars.store/" />
   <meta name="theme-color" content="#0B4B28" />
-  <!--
-    Meta-tag CSP fallback (Aug 2026 audit fix):
-    The real HTTP security headers are already correctly configured in
-    /_headers and /netlify.toml, but this store is currently deployed on
-    Tencent Cloud EdgeOne static hosting, which does not read either file
-    format — so those headers were silently never applied in production
-    (confirmed by the PageSpeed report showing 0 security headers present).
-    A <meta> CSP tag works identically on ANY static host with zero
-    server-side configuration needed, so it's added here as a guaranteed
-    fallback. Note: frame-ancestors, X-Frame-Options, and HSTS cannot be
-    set via <meta> per the HTML spec — those three MUST still be enabled
-    from the EdgeOne dashboard's custom-response-headers rule for the
-    domain (see AUDIT_REPORT_2026_v2.md for the exact steps).
-  -->
-  <!--
-    CSP is served via HTTP headers (netlify.toml / _headers / edgeone dashboard).
-    Inline meta CSP removed to prevent blocking module scripts in standalone
-    PWA and Android WebView contexts where origin differences cause CSP violations.
-  -->
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link rel="manifest" href="/manifest.json?v=2026" />
@@ -43,9 +24,6 @@
   <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
   <link rel="preconnect" href="https://rgusisancfcdabfnfwoy.supabase.co" crossorigin />
   <link rel="preconnect" href="https://earnest-city-7nn32.firebaseapp.com" crossorigin />
-  <!-- LCP fix: preload the first hero background image (matches heroImages[0]
-       in HomePage.tsx) so the browser fetches it from the raw HTML instead of
-       waiting for JS to parse/execute/render before discovering it. -->
   <link rel="preload" as="image" fetchpriority="high"
         href="https://images.unsplash.com/photo-1542838132-92c53300491e?q=70&amp;w=1200&amp;auto=format&amp;fit=crop" />
   <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap"
@@ -56,20 +34,17 @@
   <meta property="og:image" content="/opengraph.jpg?v=2026" />
   <meta property="og:url" content="https://deltastars.store" />
 
-  <!-- Native Automated Chunk Load Error and Old Version Cache Recovery Listener -->
   <script>
-    // Intercept and suppress benign sandbox environment WebSocket/Vite/Fetch errors 
-    // to prevent showing scary warning drawers/overlays to the user
+    // Suppress benign sandbox WebSocket/HMR errors
     window.addEventListener('error', function(e) {
       var msg = (e.message || '').toLowerCase();
       var errorSource = (e.filename || '');
       if (
-        msg.includes('websocket') || 
-        msg.includes('vite') || 
+        msg.includes('websocket') ||
+        msg.includes('vite') ||
         msg.includes('failed to fetch') ||
         errorSource.includes('_ai_studio_iframe.js')
       ) {
-        console.info('🛡️ [Delta Stars] Suppressing benign sandbox/HMR error:', e.message);
         e.stopImmediatePropagation();
         e.preventDefault();
         return true;
@@ -84,19 +59,18 @@
       }
       reasonStr = reasonStr.toLowerCase();
       if (
-        reasonStr.includes('websocket') || 
-        reasonStr.includes('failed to fetch') || 
+        reasonStr.includes('websocket') ||
+        reasonStr.includes('failed to fetch') ||
         reasonStr.includes('vite') ||
         reasonStr.includes('closed without opened')
       ) {
-        console.info('🛡️ [Delta Stars] Suppressing benign sandbox/HMR unhandled rejection:', reasonStr);
         e.stopImmediatePropagation();
         e.preventDefault();
         return true;
       }
     }, true);
 
-    // Safe global Storage polyfill (Only applies if native localStorage throws in restricted sandboxes)
+    // Safe global Storage polyfill for restricted sandboxes
     (function() {
       var mockStoreLocal = {};
       var mockStoreSession = {};
@@ -136,7 +110,6 @@
         window.localStorage.removeItem(testKey);
         safeLocal = window.localStorage;
       } catch (e) {
-        console.warn('⚠️ [Delta Stars Sandbox] LocalStorage restricted. Applying virtual storage.');
         safeLocal = createSafeStorageMock(mockStoreLocal);
       }
 
@@ -147,7 +120,6 @@
         window.sessionStorage.removeItem(testKey);
         safeSession = window.sessionStorage;
       } catch (e) {
-        console.warn('⚠️ [Delta Stars Sandbox] SessionStorage restricted. Applying virtual storage.');
         safeSession = createSafeStorageMock(mockStoreSession);
       }
 
@@ -174,69 +146,49 @@
       }
     })();
 
+    // Chunk load error recovery - clear caches and reload
     window.addEventListener('error', function(e) {
-      const errorText = (e.message || '').toLowerCase();
-      const isChunkError = errorText.includes('chunk') || 
-                           errorText.includes('failed to fetch dynamically imported module') ||
-                           errorText.includes('unexpected token') || 
-                           (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') && e.target.src && e.target.src.includes('.js'));
-      
+      var errorText = (e.message || '').toLowerCase();
+      var isChunkError = errorText.includes('chunk') ||
+                         errorText.includes('failed to fetch dynamically imported module') ||
+                         errorText.includes('unexpected token') ||
+                         (e.target && (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') && e.target.src && e.target.src.includes('.js'));
+
       if (isChunkError) {
-        console.warn('⚡ [Delta Stars] Unresolvable dynamic chunk error or stale asset version detected! Flushing caches and re-initiating system bootstrap...');
-        
-        // Programmatically unregister all existing service workers
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
-            registrations.forEach(function(reg) {
-              reg.unregister();
-            });
+            registrations.forEach(function(reg) { reg.unregister(); });
           });
         }
-        
-        // Clear all window storage caches
         if ('caches' in window) {
           caches.keys().then(function(keys) {
-            keys.forEach(function(key) {
-              caches.delete(key);
-            });
+            keys.forEach(function(key) { caches.delete(key); });
           });
         }
-
-        // Flush Local Storage state to reset stuck sessions if needed
-        try {
-          localStorage.removeItem('ds_current_page');
-        } catch(err) {}
-
-        // Trigger a clean force-reload bypassing the cache
-        setTimeout(function() {
-          window.location.reload();
-        }, 400);
+        try { localStorage.removeItem('ds_current_page'); } catch(err) {}
+        setTimeout(function() { window.location.reload(); }, 400);
       }
     }, true);
 
-    // Absolute Failsafe: Automatically dismiss the critical boot splash screen after 1.8 seconds
-    // to guarantee 100% stable uptime and prevent any rendering or chunk-loading freeze on some platforms.
+    // Failsafe: dismiss boot splash after 2.5s
     setTimeout(function() {
       var splash = document.getElementById('delta-critical-boot-splash');
       if (splash) {
-        console.warn('⚠️ [Delta Stars] Absolute failsafe triggered. Forcefully dismissing splash screen.');
         splash.style.opacity = '0';
         splash.style.pointerEvents = 'none';
         setTimeout(function() {
-          try { splash.remove(); } catch (err) {
-            try { splash.style.display = 'none'; } catch (e) {}
-          }
+          try { splash.remove(); } catch (err) { splash.style.display = 'none'; }
         }, 500);
       }
-    }, 1800);
+    }, 2500);
   </script>
 
-  <!-- High-Performance Critical Boot Splash Screen Inline Style (Anti-Rendering Deadlock) -->
+  <!-- Critical Boot Splash -->
   <style>
     #delta-critical-boot-splash {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background-color: #0d240d; /* Brand Forest Green Dark */
+      background-color: #0d240d;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -260,7 +212,7 @@
     .splash-circle-pulse {
       position: absolute;
       width: 160px; height: 160px;
-      border: 3px solid rgba(255, 146, 43, 0.4); /* Brand Vibrant Deep Orange */
+      border: 3px solid rgba(255, 146, 43, 0.4);
       border-radius: 50%;
       animation: splash-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
     }
@@ -333,15 +285,9 @@
       }
     }
   </style>
-  <script type="module" crossorigin src="/assets/index-EpvrvTyl.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/vendor-icons-CriASIIv.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-recharts-CYJC7oJ0.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-firebase-DmCYps50.js">
-  <link rel="modulepreload" crossorigin href="/assets/vendor-motion-D5iXEkfm.js">
-  <link rel="stylesheet" crossorigin href="/assets/index-C44imDqO.css">
 </head>
 <body>
-  <!-- High Performance Isolated Boot Splash Outside the main React Root -->
+  <!-- Critical Boot Splash -->
   <div id="delta-critical-boot-splash">
     <div class="splash-logo-container">
       <div class="splash-circle-pulse"></div>
@@ -356,5 +302,6 @@
   </div>
 
   <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
