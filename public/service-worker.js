@@ -3,7 +3,7 @@
 // شركة نجوم دلتا للتجارة (Delta Stars Trading Co.)
 // ================================================================
 
-const CACHE_VERSION = 'v13-delta-stars-pristine-assets';
+const CACHE_VERSION = 'v14-delta-stars-icons-fixed';
 const CACHE_STATIC_NAME = `delta-stars-static-${CACHE_VERSION}`;
 const CACHE_DYNAMIC_NAME = `delta-stars-dynamic-${CACHE_VERSION}`;
 const CACHE_IMAGES_NAME = `delta-stars-images-${CACHE_VERSION}`;
@@ -13,22 +13,18 @@ const PRECACHE_URLS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/site.webmanifest',
   '/official_logo.png',
-  '/logo.png',
   '/icon-192.png',
   '/icon-512.png',
-  '/splash_official_banner.jpg',
   '/favicon.svg',
-  '/offline.html',
   '/version.json'
 ];
 
-// Install: Pre-cache app shell assets
+// Install: Pre-cache critical app shell only (no stale HTML)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_STATIC_NAME).then((cache) => {
-      console.log('📦 [Service Worker] Pre-caching critical application shell...');
+      console.log('📦 [SW] Pre-caching app shell...');
       return Promise.allSettled(
         PRECACHE_URLS.map((url) => cache.add(url))
       );
@@ -37,7 +33,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// Activate: Delete obsolete caches automatically
+// Activate: Delete ALL old caches aggressively
 self.addEventListener('activate', (event) => {
   const currentCaches = [
     CACHE_STATIC_NAME,
@@ -52,7 +48,7 @@ self.addEventListener('activate', (event) => {
         cacheNames
           .filter((name) => !currentCaches.includes(name))
           .map((name) => {
-            console.log('🗑️ [Service Worker] Removing obsolete cache:', name);
+            console.log('🗑️ [SW] Removing obsolete cache:', name);
             return caches.delete(name);
           })
       );
@@ -75,27 +71,73 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // 1. Navigation Requests (App Shell HTML): Network-First, fallback to Cache / offline.html
+  // 1. Navigation Requests: Network-First (never serve stale HTML)
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
         .then((networkResponse) => {
           if (networkResponse.ok) {
+            // Cache a fresh copy but always serve network version first
             const responseClone = networkResponse.clone();
-            caches.open(CACHE_STATIC_NAME).then((cache) => cache.put('/', responseClone));
+            caches.open(CACHE_STATIC_NAME).then((cache) => cache.put(request, responseClone));
           }
           return networkResponse;
         })
         .catch(() => {
-          return caches.match('/').then((cachedResponse) => {
-            return cachedResponse || caches.match('/offline.html');
-          });
+          // Only use cache as absolute last resort (never offline.html for SPA)
+          return caches.match('/index.html');
         })
     );
     return;
   }
 
-  // 2. API Endpoints / Product Data: Network-First with Cache Fallback for offline catalog browsing
+  // 2. JS/CSS assets: Cache-First with background update (assets are hashed, so cache is safe)
+  if (url.pathname.includes('/assets/') || request.destination === 'script' || request.destination === 'style') {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        const fetchPromise = fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_DYNAMIC_NAME).then((cache) => cache.put(request, responseClone));
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedResponse);
+
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // 3. Images: Cache-First with stale-while-revalidate
+  const isImage = 
+    request.destination === 'image' ||
+    url.pathname.match(/\.(png|jpg|jpeg|svg|webp|gif|ico)$/i) ||
+    url.hostname.includes('unsplash.com') ||
+    url.hostname.includes('lh3.googleusercontent.com');
+
+  if (isImage) {
+    event.respondWith(
+      caches.match(request).then((cachedResponse) => {
+        const fetchPromise = fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_IMAGES_NAME).then((cache) => cache.put(request, responseClone));
+            }
+            return networkResponse;
+          })
+          .catch(() => cachedResponse);
+
+        return cachedResponse || fetchPromise;
+      })
+    );
+    return;
+  }
+
+  // 4. API: Network-First with cache fallback
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request)
@@ -119,39 +161,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Images (Unsplash, local PNG/JPG/SVG/WEBP): Cache-First / Stale-While-Revalidate
-  const isImage = 
-    request.destination === 'image' ||
-    url.pathname.match(/\.(png|jpg|jpeg|svg|webp|gif|ico)$/i) ||
-    url.hostname.includes('unsplash.com');
-
-  if (isImage) {
-    event.respondWith(
-      caches.match(request).then((cachedResponse) => {
-        const fetchPromise = fetch(request)
-          .then((networkResponse) => {
-            if (networkResponse && networkResponse.status === 200) {
-              const responseClone = networkResponse.clone();
-              caches.open(CACHE_IMAGES_NAME).then((cache) => cache.put(request, responseClone));
-            }
-            return networkResponse;
-          })
-          .catch(() => cachedResponse);
-
-        return cachedResponse || fetchPromise;
-      })
-    );
-    return;
-  }
-
-  // 4. Static Assets & Fonts (JS, CSS, WebFonts): Stale-While-Revalidate
-  const isStaticAsset =
-    url.pathname.includes('/assets/') ||
-    url.hostname.includes('fonts.googleapis.com') ||
-    url.hostname.includes('fonts.gstatic.com') ||
-    url.hostname.includes('unpkg.com');
-
-  if (isStaticAsset || url.origin === self.location.origin) {
+  // 5. Everything else (fonts, etc.): Network-First
+  if (url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')) {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         const fetchPromise = fetch(request)
